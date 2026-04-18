@@ -53,12 +53,21 @@ const MODELS: ProviderModelConfig[] = [
 		maxTokens: 32000,
 	},
 	{
+		id: "claude-opus-4-7@default",
+		name: "Claude Opus 4.7 (Vertex AI)",
+		reasoning: true,
+		input: ["text", "image"],
+		cost: { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
+		contextWindow: 1000000,
+		maxTokens: 128000,
+	},
+	{
 		id: "claude-opus-4-6@default",
 		name: "Claude Opus 4.6 (Vertex AI)",
 		reasoning: true,
 		input: ["text", "image"],
 		cost: { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
-		contextWindow: 200000,
+		contextWindow: 1000000,
 		maxTokens: 128000,
 	},
 	{
@@ -158,7 +167,7 @@ function mergeHeaders(...sources: Array<Record<string, string> | undefined>): Re
 }
 
 function supportsAdaptiveThinking(modelId: string): boolean {
-	return modelId.includes("opus-4-6") || modelId.includes("opus-4.6");
+	return modelId.includes("opus-4-7") || modelId.includes("opus-4.7") || modelId.includes("opus-4-6") || modelId.includes("opus-4.6");
 }
 
 function mapThinkingLevelToEffort(level: SimpleStreamOptions["reasoning"]): AnthropicVertexEffort {
@@ -430,9 +439,16 @@ function resolveProject(options?: AnthropicVertexOptions): string | undefined {
 	);
 }
 
-function resolveRegion(options?: AnthropicVertexOptions): string {
+function resolveRegion(model: Model<Api>, options?: AnthropicVertexOptions): string {
+        // Opus 4.7 is only available in "global" right now
+	if (model.id.includes("opus-4-7") || model.id.includes("opus-4.7")) {
+		return "global";
+	}
 	return (
-		options?.region ?? process.env.GOOGLE_CLOUD_LOCATION ?? process.env.CLOUD_ML_REGION ?? DEFAULT_REGION
+		options?.region ??
+		process.env.GOOGLE_CLOUD_LOCATION ??
+		process.env.CLOUD_ML_REGION ??
+		DEFAULT_REGION
 	);
 }
 
@@ -448,10 +464,9 @@ function createClient(model: Model<Api>, options?: AnthropicVertexOptions): Anth
 			"Anthropic Vertex requires a project ID. Set ANTHROPIC_VERTEX_PROJECT_ID or GOOGLE_CLOUD_PROJECT/GCLOUD_PROJECT.",
 		);
 	}
-
 	return new AnthropicVertex({
 		projectId: project,
-		region: resolveRegion(options),
+		region: resolveRegion(model, options),
 		defaultHeaders: mergeHeaders(
 			{
 				accept: "application/json",
