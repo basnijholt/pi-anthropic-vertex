@@ -53,6 +53,15 @@ const MODELS: ProviderModelConfig[] = [
 		maxTokens: 32000,
 	},
 	{
+		id: "claude-opus-4-8@default",
+		name: "Claude Opus 4.8 (Vertex AI)",
+		reasoning: true,
+		input: ["text", "image"],
+		cost: { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
+		contextWindow: 1000000,
+		maxTokens: 128000,
+	},
+	{
 		id: "claude-opus-4-7@default",
 		name: "Claude Opus 4.7 (Vertex AI)",
 		reasoning: true,
@@ -167,7 +176,7 @@ function mergeHeaders(...sources: Array<Record<string, string> | undefined>): Re
 }
 
 function supportsAdaptiveThinking(modelId: string): boolean {
-	return modelId.includes("opus-4-7") || modelId.includes("opus-4.7") || modelId.includes("opus-4-6") || modelId.includes("opus-4.6");
+	return ["opus-4-6", "opus-4-7", "opus-4-8"].some((id) => modelId.includes(id));
 }
 
 function mapThinkingLevelToEffort(level: SimpleStreamOptions["reasoning"]): AnthropicVertexEffort {
@@ -440,8 +449,8 @@ function resolveProject(options?: AnthropicVertexOptions): string | undefined {
 }
 
 function resolveRegion(model: Model<Api>, options?: AnthropicVertexOptions): string {
-        // Opus 4.7 is only available in "global" right now
-	if (model.id.includes("opus-4-7") || model.id.includes("opus-4.7")) {
+        // Opus 4.7 and 4.8 are only available in "global" right now
+	if (["opus-4-7", "opus-4-8"].some((id) => model.id.includes(id))) {
 		return "global";
 	}
 	return (
